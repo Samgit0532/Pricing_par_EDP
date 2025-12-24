@@ -1,0 +1,14 @@
+# Build folders
+build/
+cmake-build-*/
+
+# VS Code
+.vscode/
+
+# Compiled files
+*.o
+*.exe
+*.out
+
+# Mac / Linux
+.DS_Store
