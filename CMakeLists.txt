@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(bs_pde_pricer
     src/main.cpp
+    src/solvers/Solver.cpp
 )
 
 target_include_directories(bs_pde_pricer PRIVATE src)
