@@ -57,25 +57,25 @@ ExplicitFdSolver::Result ExplicitFdSolver::price(const InterfaceProducts& option
     res.price = grid.interpolate(V, S0);
 
 
-// Greeks computation
-const auto& S = grid.priceGrid();
-const double dS = grid.dS();
-const int Ns = grid.Ns();
+  // Greeks computation
+  const auto& S = grid.priceGrid();
+  const double dS = grid.dS();
+  const int Ns = grid.Ns();
 
-// Find i0 such that S[i0] = S0
-int i0 = 0;
-while (i0 < Ns - 1 && S[i0 + 1] < S0)
-    ++i0;
+  // Find i0 such that S[i0] = S0
+  int i0 = 0;
+  while (i0 < Ns - 1 && S[i0 + 1] < S0)
+      ++i0;
   
-if (i0 == 0)  i0 = 1;  // In order to avoid boundaries
-if (i0 >= Ns) i0 = Ns - 1;
+  if (i0 == 0)  i0 = 1;  // In order to avoid boundaries
+  if (i0 >= Ns) i0 = Ns - 1;
 
-// Delta
-res.delta = (V[i0+1] - V[i0-1)] / (2.0*dS);
+  // Delta
+  res.delta = (V[i0+1] - V[i0-1)] / (2.0*dS);
 
-//Gamma
-res.gamma= ( V[i0+1] - 2.0*V[i0] + V[i0-1]) / (dS*dS);
+  //Gamma
+  res.gamma= ( V[i0+1] - 2.0*V[i0] + V[i0-1]) / (dS*dS);
 
 
-return res;
+  return res;
 }  
