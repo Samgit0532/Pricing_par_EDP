@@ -21,8 +21,17 @@ int main() {
     auto callRes = solver.price(call, model, grid, S0);
     auto putRes  = solver.price(put,  model, grid, S0);
 
-    std::cout << "Call (FD explicit): " << callRes.price << "\n";
-    std::cout << "Put  (FD explicit): " << putRes.price  << "\n";
+    std::cout << " European Call : " << callRes.price << "\n";
+    std::cout << " Call Delta : " << callRes.delta << "\n";
+    std::cout << " Call Gamma : " << callRes.gamma << "\n";
+    
+    std::cout << " European Put : " << putRes.price  << "\n";
+    std::cout << " Put Delta : " << putRes.delta << "\n";
+    std::cout << " Put Gamma : " << putRes.gamma << "\n";
 
     return 0;
+
+
+
+    
 }
