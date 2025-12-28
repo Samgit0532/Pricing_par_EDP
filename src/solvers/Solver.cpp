@@ -12,7 +12,7 @@ ExplicitFdSolver::Result ExplicitFdSolver::price(const InterfaceProducts& option
     const double dS = grid.dS();
     const double dt = grid.dt();
 
-    // 1) Terminal condition: V(T, S) = payoff(S)
+    //  Terminal condition: V(T, S) = payoff(S)
     std::vector<double> V(Ns + 1);
     const auto& S = grid.priceGrid();
     const auto& t = grid.timeGrid();
@@ -20,7 +20,7 @@ ExplicitFdSolver::Result ExplicitFdSolver::price(const InterfaceProducts& option
     for (int i = 0; i <= Ns; ++i)
         V[i] = option.payoff(S[i]);
 
-    // 2) Backward time stepping: n = Nt-1, ..., 0
+    // Backward time stepping: n = Nt-1, ..., 0
     for (int n = Nt - 1; n >= 0; --n) {
         const double tn = t[n];
         std::vector<double> Vnew(Ns + 1);
@@ -55,5 +55,27 @@ ExplicitFdSolver::Result ExplicitFdSolver::price(const InterfaceProducts& option
     Result res;
     res.V0 = V;
     res.price = grid.interpolate(V, S0);
-    return res;
-}
+
+
+// Greeks computation
+const auto& S = grid.priceGrid();
+const double dS = grid.dS();
+const int Ns = grid.Ns();
+
+// Find i0 such that S[i0] = S0
+int i0 = 0;
+while (i0 < Ns - 1 && S[i0 + 1] < S0)
+    ++i0;
+  
+if (i0 == 0)  i0 = 1;  // In order to avoid boundaries
+if (i0 >= Ns) i0 = Ns - 1;
+
+// Delta
+res.delta = (V[i0+1] - V[i0-1)] / (2.0*dS);
+
+//Gamma
+res.gamma= ( V[i0+1] - 2.0*V[i0] + V[i0-1]) / (dS*dS);
+
+
+return res;
+}  
