@@ -1,12 +1,10 @@
 #include <iostream>
 #include <memory>
 #include <limits>
-
 #include "model/BlackScholesModel.hpp"
 #include "grid/FdGrid.hpp"
 #include "grid/GridParameters.hpp"
 #include "solvers/ExplicitFdSolver.hpp"
-
 #include "products/InterfaceProducts.hpp"
 #include "products/EuropeanCall.hpp"
 #include "products/EuropeanPut.hpp"
@@ -58,28 +56,26 @@ int main() {
     std::cout << "=== Black-Scholes PDE Pricer (FD Explicit) ===\n";
 
     // --- Market parameters ---
-    const double S0    = read_double("Spot S0: ", 0.0);
-    const double r     = read_double("Risk-free rate r: ");
-    const double sigma = read_double("Volatility sigma (>=0): ", 0.0);
-    const double q     = read_double("Dividend yield q: ");
+    const double S0    = read_double("Spot S0 (e.g 100): ", 0.0);
+    const double r     = read_double("Risk-free rate r (e.g 0.5): ");
+    const double sigma = read_double("Volatility sigma (>=0) (e.g 0.2): ", 0.0);
+    const double q     = read_double("Dividend yield q (e.g 0.02): ");
 
     BlackScholesModel model(r, sigma, q);
 
     // --- Common option params ---
-    const double T = read_double("Maturity T (>0): ", 1e-12);
+    const double T = read_double("Maturity T (>0) (e.g 1): ", 1e-12);
 
     print_menu();
     const int choice = read_int("Your choice (1-8): ", 1, 8);
 
-    // Choose grid quality
-    std::cout << "\nGrid quality:\n";
-    std::cout << " 0) fast\n";
-    std::cout << " 1) balanced\n";
-    std::cout << " 2) accurate\n";
-    const int quality = read_int("Quality (0-2): ", 0, 2);
+    // --- Grid resolution as percentage of S0 ---
+    std::cout << "\nSpatial resolution (relative step):\n";
+    std::cout << "Enter rel_dS such that dS = rel_dS * S0.\n";
+    std::cout << "Typical values: 0.004 (fast), 0.002 (balanced), 0.001 (accurate)\n";
+    const double rel_dS = read_double("rel_dS (e.g 0.002): ", 1e-15);
 
     // We must keep product objects alive after creation.
-    // We'll use a unique_ptr to a concrete product.
     std::unique_ptr<InterfaceProducts> product;
 
     if (choice == 1) {
@@ -118,8 +114,8 @@ int main() {
         product = std::make_unique<Straddle>(K, T, model);
     }
 
-    // --- Grid auto ---
-    FdGrid grid = GridParameters::makeGrid(*product, model, S0, quality);
+    // --- Grid auto (rel_dS controls Ns via dS = rel_dS*S0) ---
+    FdGrid grid = GridParameters::makeGrid(*product, model, S0, rel_dS);
 
     std::cout << "\nGrid: Nt=" << grid.Nt() << " Ns=" << grid.Ns()
               << " dt=" << grid.dt() << " dS=" << grid.dS() << "\n";
@@ -133,7 +129,6 @@ int main() {
     std::cout << "Delta : " << res.delta << "\n";
     std::cout << "Gamma : " << res.gamma << "\n";
 
-    // Small extra info
     std::cout << "\nDone.\n";
     return 0;
 }

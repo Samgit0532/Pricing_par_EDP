@@ -14,7 +14,7 @@ public:
     }
 
     double maturity() const override { return T_; }
-    double strike() const override { return K2_; } // arbitrary; return upper strike
+    double strike() const override { return K2_; } 
 
     double payoff(double S) const override {
         return std::max(K2_ - S, 0.0) - std::max(K1_ - S, 0.0);

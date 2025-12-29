@@ -47,7 +47,7 @@ int main() {
     Straddle       straddle(K, T, model);
 
     // one grid for same maturity
-    FdGrid grid = GridParameters::makeGrid(euroCall, model, S0, 1);
+    FdGrid grid = GridParameters::makeGrid(euroCall, model, S0, 0.002);
 
     auto C = solver.price(euroCall, model, grid, S0);
     auto P = solver.price(euroPut,  model, grid, S0);
