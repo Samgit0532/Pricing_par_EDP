@@ -1,115 +1,139 @@
 #include <iostream>
-#include <cmath>
-#include <iomanip>
+#include <memory>
+#include <limits>
 
 #include "model/BlackScholesModel.hpp"
 #include "grid/FdGrid.hpp"
 #include "grid/GridParameters.hpp"
-
 #include "solvers/ExplicitFdSolver.hpp"
 
+#include "products/InterfaceProducts.hpp"
 #include "products/EuropeanCall.hpp"
 #include "products/EuropeanPut.hpp"
 #include "products/AmericanCall.hpp"
 #include "products/AmericanPut.hpp"
 #include "products/Future.hpp"
+#include "products/BullCallSpread.hpp"
+#include "products/BearPutSpread.hpp"
+#include "products/Straddle.hpp"
 
-static void print_line() {
-    std::cout << "---------------------------------------------\n";
+static void clear_input() {
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+
+static int read_int(const std::string& prompt, int minv, int maxv) {
+    while (true) {
+        std::cout << prompt;
+        int x;
+        if (std::cin >> x && x >= minv && x <= maxv) return x;
+        std::cout << "Invalid input. Please enter an integer in [" << minv << ", " << maxv << "].\n";
+        clear_input();
+    }
+}
+
+static double read_double(const std::string& prompt, double minv = -1e300, double maxv = 1e300) {
+    while (true) {
+        std::cout << prompt;
+        double x;
+        if (std::cin >> x && x >= minv && x <= maxv) return x;
+        std::cout << "Invalid input. Please enter a number in [" << minv << ", " << maxv << "].\n";
+        clear_input();
+    }
+}
+
+static void print_menu() {
+    std::cout << "\nChoose a product:\n";
+    std::cout << " 1) European Call\n";
+    std::cout << " 2) European Put\n";
+    std::cout << " 3) American Call\n";
+    std::cout << " 4) American Put\n";
+    std::cout << " 5) Future (payoff S-K)\n";
+    std::cout << " 6) Bull Call Spread (Call(K1)-Call(K2), K1<K2)\n";
+    std::cout << " 7) Bear Put Spread  (Put(K2)-Put(K1), K1<K2)\n";
+    std::cout << " 8) Straddle (Call+Put)\n";
 }
 
 int main() {
-    std::cout << std::fixed << std::setprecision(6);
+    std::cout << "=== Black-Scholes PDE Pricer (FD Explicit) ===\n";
 
-    // --- Market & contract ---
-    const double S0 = 100.0;
-    const double K  = 100.0;
-    const double T  = 1.0;
-
-    const double r     = 0.05;
-    const double sigma = 0.20;
-    const double q     = 0.02;   // mets 0.0 pour tester "American Call = European Call"
+    // --- Market parameters ---
+    const double S0    = read_double("Spot S0: ", 0.0);
+    const double r     = read_double("Risk-free rate r: ");
+    const double sigma = read_double("Volatility sigma (>=0): ", 0.0);
+    const double q     = read_double("Dividend yield q: ");
 
     BlackScholesModel model(r, sigma, q);
 
-    // --- Products ---
-    EuropeanCall  euroCall(K, T, model);
-    EuropeanPut   euroPut(K, T, model);
-    AmericanCall  amerCall(K, T, model);
-    AmericanPut   amerPut(K, T, model);
-    Future        future(K, T, model);
+    // --- Common option params ---
+    const double T = read_double("Maturity T (>0): ", 1e-12);
 
-    // --- Grid (auto) ---
-    // Une grille unique suffit car tous ont même T.
-    FdGrid grid = GridParameters::makeGrid(euroCall, model, S0, /*quality=*/1);
+    print_menu();
+    const int choice = read_int("Your choice (1-8): ", 1, 8);
 
-    std::cout << "Grid: Nt=" << grid.Nt() << " Ns=" << grid.Ns()
+    // Choose grid quality
+    std::cout << "\nGrid quality:\n";
+    std::cout << " 0) fast\n";
+    std::cout << " 1) balanced\n";
+    std::cout << " 2) accurate\n";
+    const int quality = read_int("Quality (0-2): ", 0, 2);
+
+    // We must keep product objects alive after creation.
+    // We'll use a unique_ptr to a concrete product.
+    std::unique_ptr<InterfaceProducts> product;
+
+    if (choice == 1) {
+        const double K = read_double("Strike K: ", 0.0);
+        product = std::make_unique<EuropeanCall>(K, T, model);
+    } else if (choice == 2) {
+        const double K = read_double("Strike K: ", 0.0);
+        product = std::make_unique<EuropeanPut>(K, T, model);
+    } else if (choice == 3) {
+        const double K = read_double("Strike K: ", 0.0);
+        product = std::make_unique<AmericanCall>(K, T, model);
+    } else if (choice == 4) {
+        const double K = read_double("Strike K: ", 0.0);
+        product = std::make_unique<AmericanPut>(K, T, model);
+    } else if (choice == 5) {
+        const double K = read_double("Forward strike K: ");
+        product = std::make_unique<Future>(K, T, model);
+    } else if (choice == 6) {
+        const double K1 = read_double("K1: ");
+        const double K2 = read_double("K2 (>K1): ");
+        if (K2 <= K1) {
+            std::cerr << "Error: require K2 > K1.\n";
+            return 1;
+        }
+        product = std::make_unique<BullCallSpread>(K1, K2, T, model);
+    } else if (choice == 7) {
+        const double K1 = read_double("K1: ");
+        const double K2 = read_double("K2 (>K1): ");
+        if (K2 <= K1) {
+            std::cerr << "Error: require K2 > K1.\n";
+            return 1;
+        }
+        product = std::make_unique<BearPutSpread>(K1, K2, T, model);
+    } else if (choice == 8) {
+        const double K = read_double("Strike K: ", 0.0);
+        product = std::make_unique<Straddle>(K, T, model);
+    }
+
+    // --- Grid auto ---
+    FdGrid grid = GridParameters::makeGrid(*product, model, S0, quality);
+
+    std::cout << "\nGrid: Nt=" << grid.Nt() << " Ns=" << grid.Ns()
               << " dt=" << grid.dt() << " dS=" << grid.dS() << "\n";
-    print_line();
 
-    // --- Solver ---
+    // --- Price ---
     ExplicitFdSolver solver;
+    const auto res = solver.price(*product, model, grid, S0);
 
-    const auto resEuroCall = solver.price(euroCall, model, grid, S0);
-    const auto resEuroPut  = solver.price(euroPut,  model, grid, S0);
-    const auto resAmerCall = solver.price(amerCall, model, grid, S0);
-    const auto resAmerPut  = solver.price(amerPut,  model, grid, S0);
-    const auto resFuture   = solver.price(future,   model, grid, S0);
+    std::cout << "\n=== Results ===\n";
+    std::cout << "Price : " << res.price << "\n";
+    std::cout << "Delta : " << res.delta << "\n";
+    std::cout << "Gamma : " << res.gamma << "\n";
 
-    // --- Output prices & greeks ---
-    std::cout << "[European Call]  Price=" << resEuroCall.price
-              << "  Delta=" << resEuroCall.delta << "  Gamma=" << resEuroCall.gamma << "\n";
-    std::cout << "[European Put ]  Price=" << resEuroPut.price
-              << "  Delta=" << resEuroPut.delta  << "  Gamma=" << resEuroPut.gamma << "\n";
-    std::cout << "[American Call]  Price=" << resAmerCall.price
-              << "  Delta=" << resAmerCall.delta << "  Gamma=" << resAmerCall.gamma << "\n";
-    std::cout << "[American Put ]  Price=" << resAmerPut.price
-              << "  Delta=" << resAmerPut.delta  << "  Gamma=" << resAmerPut.gamma << "\n";
-    std::cout << "[Future       ]  Price=" << resFuture.price
-              << "  Delta=" << resFuture.delta   << "  Gamma=" << resFuture.gamma << "\n";
-
-    print_line();
-
-    // --- Test 1: Future analytic value ---
-    // V0 = S0*exp(-qT) - K*exp(-rT)
-    const double future_ref = S0 * std::exp(-q * T) - K * std::exp(-r * T);
-    const double future_err = resFuture.price - future_ref;
-
-    std::cout << "Future check:\n";
-    std::cout << "  FD price     = " << resFuture.price << "\n";
-    std::cout << "  Analytic     = " << future_ref << "\n";
-    std::cout << "  Error (FD-Ref)= " << future_err << "\n";
-    print_line();
-
-    // --- Test 2: American Put >= European Put ---
-    std::cout << "American Put >= European Put check:\n";
-    std::cout << "  AmerPut - EuroPut = " << (resAmerPut.price - resEuroPut.price) << "\n";
-    if (resAmerPut.price + 1e-10 >= resEuroPut.price) {
-        std::cout << "  OK\n";
-    } else {
-        std::cout << "  WARNING (should not happen; check boundaries / projection)\n";
-    }
-    print_line();
-
-    // --- Test 3: American Call >= European Call (strictly if q>0 can happen) ---
-    std::cout << "American Call >= European Call check:\n";
-    std::cout << "  AmerCall - EuroCall = " << (resAmerCall.price - resEuroCall.price) << "\n";
-    if (resAmerCall.price + 1e-10 >= resEuroCall.price) {
-        std::cout << "  OK\n";
-    } else {
-        std::cout << "  WARNING (should not happen)\n";
-    }
-    print_line();
-
-    // --- Bonus: Put-Call parity for European options ---
-    const double parity_rhs = S0 * std::exp(-q * T) - K * std::exp(-r * T);
-    const double parity_lhs = resEuroCall.price - resEuroPut.price;
-    const double parity_err = parity_lhs - parity_rhs;
-
-    std::cout << "European Put-Call parity check:\n";
-    std::cout << "  C - P (FD)          = " << parity_lhs << "\n";
-    std::cout << "  S0*exp(-qT)-K*e(-rT)= " << parity_rhs << "\n";
-    std::cout << "  Error               = " << parity_err << "\n";
-
+    // Small extra info
+    std::cout << "\nDone.\n";
     return 0;
 }

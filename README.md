@@ -1,85 +1,71 @@
-# Pricing par EDP – Black–Scholes (C++)
+# Black–Scholes PDE Pricer (Finite Differences)
 
-Projet de pricing de produits dérivés par résolution numérique de l’EDP de Black–Scholes–Merton
-à l’aide de méthodes de différences finies.
+This project implements a **Black–Scholes pricer** based on the numerical resolution of the Black–Scholes partial differential equation using an **explicit finite-difference scheme**.
 
-L’objectif est de construire progressivement :
-- une architecture C++ propre et modulaire,
-- un solver explicite puis implicite,
-- le pricing de différents types d’options (européennes, puis extensions).
+It supports several financial products (European and American options, forwards, spreads, straddles) and provides:
+- an **interactive application** allowing the user to choose a product and input parameters,
+- a **test executable** checking pricing consistency (put–call parity, American dominance, forward pricing, etc.).
 
 ---
 
-## État actuel du projet
+## 1. Build and run with CMake
 
-À ce stade, le projet contient **l’architecture de base**, mais **pas encore le solver numérique**.
-Le but était d’établir des fondations claires avant d’implémenter les schémas de différences finies.
+### Requirements
+- CMake ≥ 3.16  
+- A C++ compiler with **C++17** support (e.g. `g++`)
 
-Les briques déjà implémentées sont :
+### Build
+From the root of the project:
 
-### 1. Modèle : `BlackScholesModel`
-📁 `src/model/BlackScholesModel.hpp`
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
 
-Contient les paramètres du modèle de Black–Scholes :
-- taux sans risque `r`
-- volatilité `sigma`
-- dividende continu `q` (optionnel)
+### Run the interactive application
+```bash
+./build/bs_app
+```
 
-Cette classe ne fait **aucun calcul de pricing** : elle fournit simplement les paramètres du modèle
-utilisés ensuite par les solveurs.
+### Run the test suite
+```bash
+./build/bs_tests
+```
 
----
-
-### 2. Grille de discrétisation : `FdGrid`
-📁 `src/grid/FdGrid.hpp`
-
-Cette classe gère la discrétisation :
-- du temps : \( [0, T] \) découpé en `Nt` pas
-- du prix du sous-jacent : \( [S_{min}, S_{max}] \) découpé en `Ns` pas
-
-Elle fournit :
-- les pas `dt` et `dS`,
-- les grilles de temps et de prix,
-- une fonction d’interpolation linéaire pour obtenir le prix pour un spot réel \( S_0 \).
+The test executable performs automatic sanity checks on prices and Greeks.
 
 ---
 
-### 3. Produits financiers
+## 2. Build and run with g++ (without CMake)
 
-#### Interface générique
-📁 `src/products/InterfaceProducts.hpp`
+### Requirements
+- `g++` with C++17 support
 
-Définit ce qu’est une option du point de vue du solver :
-- payoff terminal \( V(T,S) \),
-- conditions aux bords en \( S = S_{min} \) et \( S = S_{max} \),
-- possibilité d’exercice anticipé (prévu pour les options américaines).
+### Compile the interactive application
+```bash
+g++ -std=c++17 -O2 -I./src \
+  src/main.cpp \
+  src/solvers/Solver.cpp \
+  -o bs_app
+```
 
-Le solver sera écrit **uniquement** contre cette interface.
+Run:
+```bash
+./bs_app
+```
 
-#### Options européennes
-📁 `src/products/EuropeanCall.hpp`  
-📁 `src/products/EuropeanPut.hpp`
+### Compile the test executable
+```bash
+g++ -std=c++17 -O2 -I./src \
+  src/tests/TestPricing.cpp \
+  src/solvers/Solver.cpp \
+  -o bs_tests
+```
 
-Implémentations concrètes :
-- Call européen
-- Put européen
-
-Chaque option :
-- définit son payoff,
-- définit ses conditions aux bords cohérentes avec le modèle de Black–Scholes.
-
----
-
-### 4. Solver
-📁 `src/solvers/`
-
-👉 **Pour l’instant, ce dossier est vide.**
-
-Il est réservé à l’implémentation prochaine :
-- du schéma de différences finies explicite,
-- puis du schéma implicite / Crank–Nicolson.
+Run:
+```bash
+./bs_tests
+```
 
 ---
-
-## Organisation des fichiers
 
