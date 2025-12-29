@@ -9,10 +9,14 @@
 class FdGrid {
 public:
     FdGrid(double T, double Smax, int NbTimeSteps, int NbPriceSteps, double Smin = 0.0)
-        : T_(T), Smin_(Smin), Smax_(Smax), Nt_(NbTimeSteps), Ns_(NbPriceSteps) {
-
+        : T_(T), Smin_(Smin), Smax_(Smax), Nt_(NbTimeSteps), Ns_(NbPriceSteps)
+    {
+        if (T_ <= 0.0)
+            throw std::invalid_argument("T must be > 0");
         if (Nt_ <= 0 || Ns_ <= 1)
             throw std::invalid_argument("Nt > 0 and Ns > 1 required");
+        if (Smax_ <= Smin_)
+            throw std::invalid_argument("Smax must be > Smin");
 
         dt_ = T_ / Nt_;
         dS_ = (Smax_ - Smin_) / Ns_;
@@ -29,25 +33,30 @@ public:
     }
 
     // --- getters ---
-    double T() const { return T_; }
+    double T() const  { return T_; }
     double dt() const { return dt_; }
     double dS() const { return dS_; }
 
     int Nt() const { return Nt_; }
     int Ns() const { return Ns_; }
 
-    const std::vector<double>& timeGrid() const { return t_; }
+    const std::vector<double>& timeGrid() const  { return t_; }
     const std::vector<double>& priceGrid() const { return S_; }
 
     // Linear interpolation of a value defined on the S-grid
     double interpolate(const std::vector<double>& V, double S0) const {
+        if ((int)V.size() != Ns_ + 1)
+            throw std::invalid_argument("V must have size Ns+1 to interpolate on the grid.");
+
         if (S0 <= S_.front()) return V.front();
         if (S0 >= S_.back())  return V.back();
 
         auto it = std::upper_bound(S_.begin(), S_.end(), S0);
-        int i = int(it - S_.begin()) - 1;
+        int i = static_cast<int>(it - S_.begin()) - 1;
 
-        double w = (S0 - S_[i]) / (S_[i+1] - S_[i]);
+        const double denom = (S_[i+1] - S_[i]); // should be dS_, but keep generic
+        const double w = (S0 - S_[i]) / denom;
+
         return (1.0 - w) * V[i] + w * V[i+1];
     }
 

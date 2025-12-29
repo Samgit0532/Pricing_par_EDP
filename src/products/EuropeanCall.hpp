@@ -1,12 +1,9 @@
 #pragma once
-#include "InterfaceProducts.cpp"
-#include "../model/BlackScholesModel.cpp"
+#include "InterfaceProducts.hpp"
+#include "../model/BlackScholesModel.hpp"
 #include <algorithm>
 #include <cmath>
 
-/**
- * European Call option under Black–Scholes
- */
 class EuropeanCall : public InterfaceProducts {
 public:
     EuropeanCall(double strike, double maturity, const BlackScholesModel& model)
@@ -19,15 +16,14 @@ public:
         return std::max(S - K_, 0.0);
     }
 
-    // At S = 0, call is worthless
     double leftBoundary(double /*t*/) const override {
         return 0.0;
     }
 
-    // For large S, call behaves like S - K e^{-r(T-t)}
     double rightBoundary(double t, double Smax) const override {
-        const double tau = T_ - t;
-        return Smax - K_ * std::exp(-model_.r() * tau);
+    const double tau = T_ - t;
+    if (tau <= 0.0) return payoff(Smax);
+    return Smax * std::exp(-model_.q() * tau) - K_ * std::exp(-model_.r() * tau);
     }
 
 private:

@@ -1,12 +1,9 @@
 #pragma once
-#include "InterfaceProducts.cpp"
-#include "../model/BlackScholesModel.cpp"
+#include "InterfaceProducts.hpp"
+#include "../model/BlackScholesModel.hpp"
 #include <algorithm>
 #include <cmath>
 
-/**
- * European Put option under Black–Scholes
- */
 class EuropeanPut : public InterfaceProducts {
 public:
     EuropeanPut(double strike, double maturity, const BlackScholesModel& model)
@@ -19,13 +16,12 @@ public:
         return std::max(K_ - S, 0.0);
     }
 
-    // At S = 0, put is worth discounted strike
     double leftBoundary(double t) const override {
         const double tau = T_ - t;
+        if (tau < 0.0) return payoff(0.0);
         return K_ * std::exp(-model_.r() * tau);
     }
 
-    // For large S, put tends to 0
     double rightBoundary(double /*t*/, double /*Smax*/) const override {
         return 0.0;
     }

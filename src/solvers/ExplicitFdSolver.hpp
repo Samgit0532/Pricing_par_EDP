@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "../grid/FdGrid.cpp"
-#include "../model/BlackScholesModel.cpp"
-#include "../products/InterfaceProducts.cpp"
+#include "../grid/FdGrid.hpp"
+#include "../model/BlackScholesModel.hpp"
+#include "../products/InterfaceProducts.hpp"
 
 /**
  * Explicit finite-difference solver for the Black–Scholes PDE
