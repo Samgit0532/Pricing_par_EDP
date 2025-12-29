@@ -79,38 +79,38 @@ int main() {
     std::unique_ptr<InterfaceProducts> product;
 
     if (choice == 1) {
-        const double K = read_double("Strike K: ", 0.0);
+        const double K = read_double("Strike K (e.g 100): ", 0.0);
         product = std::make_unique<EuropeanCall>(K, T, model);
     } else if (choice == 2) {
-        const double K = read_double("Strike K: ", 0.0);
+        const double K = read_double("Strike K (e.g 100): ", 0.0);
         product = std::make_unique<EuropeanPut>(K, T, model);
     } else if (choice == 3) {
-        const double K = read_double("Strike K: ", 0.0);
+        const double K = read_double("Strike K (e.g 100): ", 0.0);
         product = std::make_unique<AmericanCall>(K, T, model);
     } else if (choice == 4) {
-        const double K = read_double("Strike K: ", 0.0);
+        const double K = read_double("Strike K (e.g 100): ", 0.0);
         product = std::make_unique<AmericanPut>(K, T, model);
     } else if (choice == 5) {
-        const double K = read_double("Forward strike K: ");
+        const double K = read_double("Forward strike K (e.g 100): ");
         product = std::make_unique<Future>(K, T, model);
     } else if (choice == 6) {
-        const double K1 = read_double("K1: ");
-        const double K2 = read_double("K2 (>K1): ");
+        const double K1 = read_double("K1 (e.g 100): ");
+        const double K2 = read_double("K2 (>K1) (e.g 120): ");
         if (K2 <= K1) {
             std::cerr << "Error: require K2 > K1.\n";
             return 1;
         }
         product = std::make_unique<BullCallSpread>(K1, K2, T, model);
     } else if (choice == 7) {
-        const double K1 = read_double("K1: ");
-        const double K2 = read_double("K2 (>K1): ");
+        const double K1 = read_double("K1 (e.g 100): ");
+        const double K2 = read_double("K2 (>K1) (e.g 120): ");
         if (K2 <= K1) {
             std::cerr << "Error: require K2 > K1.\n";
             return 1;
         }
         product = std::make_unique<BearPutSpread>(K1, K2, T, model);
     } else if (choice == 8) {
-        const double K = read_double("Strike K: ", 0.0);
+        const double K = read_double("Strike K (e.g 100): ", 0.0);
         product = std::make_unique<Straddle>(K, T, model);
     }
 
