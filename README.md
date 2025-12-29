@@ -43,10 +43,7 @@ The test executable performs automatic sanity checks on prices and Greeks.
 
 ### Compile the interactive application
 ```bash
-g++ -std=c++17 -O2 -I./src \
-  src/main.cpp \
-  src/solvers/Solver.cpp \
-  -o bs_app
+g++ -std=c++17 -O2 -O2 -I./src src/main.cpp src/solvers/Solver.cpp -o bs_app
 ```
 
 Run:
@@ -56,10 +53,7 @@ Run:
 
 ### Compile the test executable
 ```bash
-g++ -std=c++17 -O2 -I./src \
-  src/tests/TestPricing.cpp \
-  src/solvers/Solver.cpp \
-  -o bs_tests
+g++ -std=c++17 -O2 -I./src src/tests/TestPricing.cpp src/solvers/Solver.cpp -o bs_tests
 ```
 
 Run:
